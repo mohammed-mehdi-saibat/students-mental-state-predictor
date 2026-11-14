@@ -26,6 +26,7 @@ def extract_numerical_columns(df: pd.DataFrame) -> pd.DataFrame:
     return numerical_columns
 
 def dataset_structure_and_basic_inspection(df: pd.DataFrame) -> None:
+    df = df.copy()
     # Inspect dataset shape
     print("=" * 30)
     print(f"DATASET SHAPE: \n{df.shape[0]} rows, {df.shape[1]} columns")
@@ -47,6 +48,7 @@ def dataset_structure_and_basic_inspection(df: pd.DataFrame) -> None:
     print("=" * 30)
 
 def dataset_quality_inspection(df: pd.DataFrame) -> None:
+    df = df.copy()
     # Inspect total missing values
     print("=" * 30)
     missing_values_total = df.isnull().sum()
@@ -61,8 +63,9 @@ def dataset_quality_inspection(df: pd.DataFrame) -> None:
     print(f"DUPLICATED VALUES: \n{duplicates_total}")
     # Make sure student_id is unique and has no missing values, because it should never be duplicated
     print("=" * 30)
-    print(f"student_id values are completely unique? --{df["student_id"].is_unique}--")
-    print(f"student_id missing values: {df["student_id"].isnull().sum()}")
+    if "student_id" in df.columns:
+        print(f"student_id values are completely unique? --{df["student_id"].is_unique}--")
+        print(f"student_id missing values: {df["student_id"].isnull().sum()}")
     # Inspect inconsistent values
     print("=" * 30)
     print("UNIQUE VALUES PER COLUMN:")
@@ -129,12 +132,16 @@ def dataset_quality_inspection(df: pd.DataFrame) -> None:
             print(f"UPPER FENCE: {upper_fence}")
             print(f"NUMBER OF OUTLIERS: {len(outliers)}")
             if len(outliers) > 0:
-                display(outliers[["student_id", col]])
+                if "student_id" in outliers.columns:
+                    display(outliers[["student_id",col]])
+                else:
+                    display(outliers[col])
             print("-" * 40)
     detect_outliers(df)
 
 
 def descriptive_statistics(df: pd.DataFrame) -> None:
+    df = df.copy()
     # Inspect numerical statistics
     print("NUMERICAL STATISTICS")
     display(df.describe().T)
@@ -153,6 +160,7 @@ def descriptive_statistics(df: pd.DataFrame) -> None:
    
 
 def target_variable_analysis(df: pd.DataFrame) -> None:
+    df = df.copy()
      # Inspect target distribution
     counts = df["mental_health_risk"].value_counts().reindex(["Low", "Medium", "High"])
     print("HOW MANY STUDENTS BELONG TO EACH CLASS")
@@ -176,6 +184,7 @@ def target_variable_analysis(df: pd.DataFrame) -> None:
     plt.show()
 
 def univariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
+    df = df.copy()
     # Plot numerical distribution
     numerical_features = df.select_dtypes(include="number")
     print("NUMERICAL FEATURES HISTOGRAM")
@@ -227,6 +236,7 @@ def univariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
     plt.show()
 
 def bevariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
+    df = df.copy()
     # Analyze numerical features vs target
     numerical_features = df.select_dtypes(include="number")
     print("NUMERICAL FEATURES VS TARGET")
@@ -294,11 +304,7 @@ def bevariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
 
 def correlation_and_feature_relevance(df: pd.DataFrame) -> None:
 
-    # Work with a copy and exclude non-predictive columns
-    eda_df = df.drop(
-        columns=["student_id", "total_activities_hours", "mental_health_risk_num"],
-        errors="ignore"
-    ).copy()
+    eda_df = df.copy()
 
     # Calculate numerical feature correlations
     numerical_features = eda_df.select_dtypes(include="number")
