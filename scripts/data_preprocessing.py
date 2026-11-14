@@ -18,4 +18,13 @@ def data_train_test_split(df: pd.DataFrame, random_state = 42,test_size=0.2) -> 
         random_state=random_state   
     )
     return X_train, X_test, y_train, y_test
+
+def identify_feature_groups(df: pd.DataFrame) -> dict:
+    feature_groups = {
+        "numerical_group" : df.select_dtypes(include="number"),
+        "ordinal_categorical_group" : df[["physical_activity", "diet_quality"]],
+        "nominal_categorical_group" : df[["gender", "part_time_job", "previous_mental_health_history"]]
+    }
+
+    return feature_groups
   
