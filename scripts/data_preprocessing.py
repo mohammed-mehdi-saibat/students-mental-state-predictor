@@ -117,3 +117,17 @@ def create_ordinal_pipeline(imputer: SimpleImputer, encoder: OrdinalEncoder) -> 
         ("encoder", encoder)
     ])
     return ordinal_pipeline
+
+def create_nominal_pipeline(imputer: SimpleImputer, encoder: OneHotEncoder) -> Pipeline:
+    nominal_pipeline = Pipeline([
+        ("imputer", imputer),
+        ("encoder", encoder)
+    ])
+    return nominal_pipeline
+
+def create_binary_pipeline(imputer: SimpleImputer, encoder: OrdinalEncoder) -> Pipeline:
+    binary_pipeline = Pipeline([
+        ("imputer", imputer), 
+        ("encoder", encoder)
+    ])  
+    return binary_pipeline
