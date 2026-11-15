@@ -5,6 +5,7 @@ from sklearn.preprocessing import OrdinalEncoder
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 
 
 def data_clues_and_target(df: pd.DataFrame) -> dict:
@@ -101,3 +102,11 @@ def create_social_media_screen_time_transformer() -> FunctionTransformer:
 def create_numerical_scaler() -> StandardScaler:
     numerical_scaler = StandardScaler()
     return numerical_scaler
+
+def create_numerical_pipeline(imputer: SimpleImputer, transformer: FunctionTransformer, scaler: StandardScaler) -> Pipeline:
+    numerical_pipeline = Pipeline([
+        ("imputer", imputer),
+        ("transformer", transformer),
+        ("scaler", scaler)
+    ])
+    return numerical_pipeline
