@@ -4,6 +4,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import FunctionTransformer
+from sklearn.preprocessing import StandardScaler
 
 
 def data_clues_and_target(df: pd.DataFrame) -> dict:
@@ -28,9 +29,13 @@ def data_train_test_split(df: pd.DataFrame, random_state=42, test_size=0.2) -> d
 def identify_feature_groups(df: pd.DataFrame) -> dict:
     feature_groups = {
         "numerical_group": df.select_dtypes(include="number").columns.tolist(),
-        "ordinal_categorical_group": df[["physical_activity", "diet_quality"]].columns.tolist(),
+        "ordinal_categorical_group": df[
+            ["physical_activity", "diet_quality"]
+        ].columns.tolist(),
         "nominal_categorical_group": df[["gender"]].columns.tolist(),
-        "binary_categorical_group" : df[["part_time_job", "previous_mental_health_history"]].columns.tolist()
+        "binary_categorical_group": df[
+            ["part_time_job", "previous_mental_health_history"]
+        ].columns.tolist(),
     }
     return feature_groups
 
@@ -58,30 +63,41 @@ def create_nominal_encoder(drop_first: bool = False) -> OneHotEncoder:
     one_hot_encoder = OneHotEncoder(
         handle_unknown="ignore",
         drop="first" if drop_first else None,
-        sparse_output=False
+        sparse_output=False,
     )
     return one_hot_encoder
 
+
 def create_binary_encoder() -> OrdinalEncoder:
     binary_encoder = OrdinalEncoder(
-        categories=[["No", "Yes"],["No", "Yes"]],
+        categories=[["No", "Yes"], ["No", "Yes"]],
         handle_unknown="use_encoded_value",
-        unknown_value=-1
+        unknown_value=-1,
     )
     return binary_encoder
 
+
 def handle_social_media_screen_time_inconsistencies(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    social_media_screen_time_inconsistencies = df['social_media_hours'] > df['screen_time_hours']
-    df.loc[social_media_screen_time_inconsistencies, "social_media_hours"] = (df[["social_media_hours", "screen_time_hours"]]).min(axis=1)
-    return df  
+    social_media_screen_time_inconsistencies = (
+        df["social_media_hours"] > df["screen_time_hours"]
+    )
+    df.loc[social_media_screen_time_inconsistencies, "social_media_hours"] = (
+        df[["social_media_hours", "screen_time_hours"]]
+    ).min(axis=1)
+    return df
+
 
 # Make the above function usable by sklearn in a pipeline using FunctionTransfrormer
 def create_social_media_screen_time_transformer() -> FunctionTransformer:
     social_media_screen_time_transformer = FunctionTransformer(
         func=handle_social_media_screen_time_inconsistencies,
         validate=False,
-        feature_names_out="one-to-one"
+        feature_names_out="one-to-one",
     )
     return social_media_screen_time_transformer
 
+
+def create_numerical_scaler() -> StandardScaler:
+    numerical_scaler = StandardScaler()
+    return numerical_scaler
