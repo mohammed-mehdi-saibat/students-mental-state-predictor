@@ -110,3 +110,10 @@ def create_numerical_pipeline(imputer: SimpleImputer, transformer: FunctionTrans
         ("scaler", scaler)
     ])
     return numerical_pipeline
+
+def create_ordinal_pipeline(imputer: SimpleImputer, encoder: OrdinalEncoder) -> Pipeline:
+    ordinal_pipeline = Pipeline([
+        ("imputer", imputer),
+        ("encoder", encoder)
+    ])
+    return ordinal_pipeline
