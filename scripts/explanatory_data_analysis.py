@@ -6,24 +6,29 @@ import seaborn as sns
 from IPython.display import display
 from pathlib import Path
 
-
 root = Path.cwd().resolve().parents[0]
 raw_data_path = root / "data" / "raw" / "student_mental_health.csv"
 plots_path = root / "reports" / "figures" / "eda"
 plots_path.mkdir(parents=True, exist_ok=True)
 
-def fetch_dataset_and_turn_into_dataframe_and_convert_column_names_to_lowercase(path: str) -> pd.DataFrame:
+
+def fetch_dataset_and_turn_into_dataframe_and_convert_column_names_to_lowercase(
+    path: str,
+) -> pd.DataFrame:
     df = pd.read_csv(path)
     df = df.rename(columns=str.lower)
     return df
+
 
 def extract_categorical_columns(df: pd.DataFrame) -> pd.DataFrame:
     categorical_columns = df.select_dtypes(include=["object", "category"])
     return categorical_columns
 
+
 def extract_numerical_columns(df: pd.DataFrame) -> pd.DataFrame:
     numerical_columns = df.select_dtypes(include="number")
     return numerical_columns
+
 
 def dataset_structure_and_basic_inspection(df: pd.DataFrame) -> None:
     df = df.copy()
@@ -47,16 +52,21 @@ def dataset_structure_and_basic_inspection(df: pd.DataFrame) -> None:
     df.info()
     print("=" * 30)
 
+
 def dataset_quality_inspection(df: pd.DataFrame) -> None:
     df = df.copy()
     # Inspect total missing values
     print("=" * 30)
     missing_values_total = df.isnull().sum()
-    print(f"MISSING VALUES TOTAL: \n{missing_values_total[missing_values_total > 0].sort_values(ascending=False)}")
+    print(
+        f"MISSING VALUES TOTAL: \n{missing_values_total[missing_values_total > 0].sort_values(ascending=False)}"
+    )
     # Inspect missing values percentage
     print("=" * 30)
     missing_percentage = (df.isnull().sum() / df.shape[0]) * 100
-    print(f"MISSING VALUES PERCENTAGE: \n{missing_percentage[missing_percentage > 0].sort_values(ascending=False)}")
+    print(
+        f"MISSING VALUES PERCENTAGE: \n{missing_percentage[missing_percentage > 0].sort_values(ascending=False)}"
+    )
     # Inspect duplicates
     print("=" * 30)
     duplicates_total = df.duplicated().sum()
@@ -64,7 +74,9 @@ def dataset_quality_inspection(df: pd.DataFrame) -> None:
     # Make sure student_id is unique and has no missing values, because it should never be duplicated
     print("=" * 30)
     if "student_id" in df.columns:
-        print(f"student_id values are completely unique? --{df["student_id"].is_unique}--")
+        print(
+            f"student_id values are completely unique? --{df["student_id"].is_unique}--"
+        )
         print(f"student_id missing values: {df["student_id"].isnull().sum()}")
     # Inspect inconsistent values
     print("=" * 30)
@@ -105,14 +117,19 @@ def dataset_quality_inspection(df: pd.DataFrame) -> None:
     week_total_sleeping_hours = df["sleep_hours"] * 7
     week_total_screen_time_hours = df["screen_time_hours"] * 7
     study_hours_per_week = df["study_hours_per_week"]
-    print(f"{df[(week_total_sleeping_hours + week_total_screen_time_hours + study_hours_per_week) > 168].shape[0]} rows")  
+    print(
+        f"{df[(week_total_sleeping_hours + week_total_screen_time_hours + study_hours_per_week) > 168].shape[0]} rows"
+    )
     print("THE ROWS ARE:")
-    df["total_activities_hours"] = week_total_sleeping_hours + week_total_screen_time_hours + study_hours_per_week
+    df["total_activities_hours"] = (
+        week_total_sleeping_hours + week_total_screen_time_hours + study_hours_per_week
+    )
     display(df[df["total_activities_hours"] > 168])
     print("-" * 30)
     # Inspect outliers
     print("-" * 30)
     print("OUTLIERS OF EACH COLUMN")
+
     def detect_outliers(df: pd.DataFrame) -> None:
         numerical_features = df.select_dtypes(include="number")
 
@@ -133,10 +150,11 @@ def dataset_quality_inspection(df: pd.DataFrame) -> None:
             print(f"NUMBER OF OUTLIERS: {len(outliers)}")
             if len(outliers) > 0:
                 if "student_id" in outliers.columns:
-                    display(outliers[["student_id",col]])
+                    display(outliers[["student_id", col]])
                 else:
                     display(outliers[col])
             print("-" * 40)
+
     detect_outliers(df)
 
 
@@ -157,11 +175,10 @@ def descriptive_statistics(df: pd.DataFrame) -> None:
     # • -1.0 to -0.5 or 0.5 to 1.0: Moderate skewness.
     # • Less than -1.0 or Greater than 1.0: High/severe skewness.
 
-   
 
 def target_variable_analysis(df: pd.DataFrame) -> None:
     df = df.copy()
-     # Inspect target distribution
+    # Inspect target distribution
     counts = df["mental_health_risk"].value_counts().reindex(["Low", "Medium", "High"])
     print("HOW MANY STUDENTS BELONG TO EACH CLASS")
     print(counts)
@@ -183,6 +200,7 @@ def target_variable_analysis(df: pd.DataFrame) -> None:
     plt.savefig(plots_path / "01_target_distribution.png", dpi=300, bbox_inches="tight")
     plt.show()
 
+
 def univariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
     df = df.copy()
     # Plot numerical distribution
@@ -196,13 +214,19 @@ def univariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
         ax.set_title(col)
 
     plt.tight_layout()
-    plt.savefig(plots_path / "02_numerical_feature_distributions.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        plots_path / "02_numerical_feature_distributions.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.show()
 
     print("=" * 30)
 
     # Plot categorical distribution
-    categorical_features = df.select_dtypes(include=["object", "str", "category"]).drop(columns="student_id")
+    categorical_features = df.select_dtypes(include=["object", "str", "category"]).drop(
+        columns="student_id"
+    )
     print("CATEGORICAL FEATURES BAR PLOT")
     fig, axes = plt.subplots(3, 3, figsize=(15, 10))
     axes = axes.flatten()
@@ -213,11 +237,15 @@ def univariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
         ax.tick_params(axis="x", rotation=45)
 
     # Hide empty subplots
-    for ax in axes[len(categorical_features.columns):]:
+    for ax in axes[len(categorical_features.columns) :]:
         ax.set_visible(False)
 
     plt.tight_layout()
-    plt.savefig(plots_path / "03_categorical_feature_distributions.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        plots_path / "03_categorical_feature_distributions.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.show()
 
     print("=" * 30)
@@ -232,8 +260,11 @@ def univariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
         ax.set_title(col)
 
     plt.tight_layout()
-    plt.savefig(plots_path / "04_numerical_feature_boxplots.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        plots_path / "04_numerical_feature_boxplots.png", dpi=300, bbox_inches="tight"
+    )
     plt.show()
+
 
 def bevariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
     df = df.copy()
@@ -244,32 +275,52 @@ def bevariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
     axes = axes.flatten()
 
     for ax, col in zip(axes, numerical_features.columns):
-        sns.boxplot(data=df, x="mental_health_risk", y=col, order=["Low", "Medium", "High"], ax=ax)
+        sns.boxplot(
+            data=df,
+            x="mental_health_risk",
+            y=col,
+            order=["Low", "Medium", "High"],
+            ax=ax,
+        )
         ax.set_title(col)
 
     plt.tight_layout()
-    plt.savefig(plots_path / "05_numerical_features_vs_target.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        plots_path / "05_numerical_features_vs_target.png", dpi=300, bbox_inches="tight"
+    )
     plt.show()
 
     print("=" * 30)
 
     # Analyze categorical features vs target
-    categorical_features = df.select_dtypes(include=["category", "str", "object"]).drop(columns=["student_id", "mental_health_risk"])
+    categorical_features = df.select_dtypes(include=["category", "str", "object"]).drop(
+        columns=["student_id", "mental_health_risk"]
+    )
     print("CATEGORICAL FEATURES VS TARGET")
     fig, axes = plt.subplots(3, 3, figsize=(15, 10))
     axes = axes.flatten()
 
     for ax, col in zip(axes, categorical_features.columns):
-        sns.countplot(data=df, x=col, hue="mental_health_risk", hue_order=["Low", "Medium", "High"], ax=ax)
+        sns.countplot(
+            data=df,
+            x=col,
+            hue="mental_health_risk",
+            hue_order=["Low", "Medium", "High"],
+            ax=ax,
+        )
         ax.set_title(col)
         ax.tick_params(axis="x", rotation=45)
 
     # Hide empty subplots
-    for ax in axes[len(categorical_features.columns):]:
+    for ax in axes[len(categorical_features.columns) :]:
         ax.set_visible(False)
 
     plt.tight_layout()
-    plt.savefig(plots_path / "06_categorical_features_vs_target.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        plots_path / "06_categorical_features_vs_target.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.show()
 
     print("=" * 30)
@@ -287,18 +338,25 @@ def bevariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
     axes = axes.flatten()
 
-    mental_health_risk_palette = {
-        "High": "red",
-        "Medium": "yellow",
-        "Low": "green"
-    }
+    mental_health_risk_palette = {"High": "red", "Medium": "yellow", "Low": "green"}
 
     for ax, (x_col, y_col) in zip(axes, pairs):
-        sns.scatterplot(data=df, x=x_col, y=y_col, hue="mental_health_risk", hue_order=["Low", "Medium", "High"], alpha=0.5, ax=ax, palette=mental_health_risk_palette)
+        sns.scatterplot(
+            data=df,
+            x=x_col,
+            y=y_col,
+            hue="mental_health_risk",
+            hue_order=["Low", "Medium", "High"],
+            alpha=0.5,
+            ax=ax,
+            palette=mental_health_risk_palette,
+        )
         ax.set_title(f"{x_col} vs {y_col}")
 
     plt.tight_layout()
-    plt.savefig(plots_path / "07_feature_relationships.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        plots_path / "07_feature_relationships.png", dpi=300, bbox_inches="tight"
+    )
     plt.show()
 
 
@@ -321,12 +379,16 @@ def correlation_and_feature_relevance(df: pd.DataFrame) -> None:
         cmap="coolwarm",
         center=0,
         square=True,
-        linewidths=0.5
+        linewidths=0.5,
     )
 
     plt.title("Numerical Features Correlation Heatmap")
     plt.tight_layout()
-    plt.savefig(plots_path / "08_numerical_correlation_heatmap.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        plots_path / "08_numerical_correlation_heatmap.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.show()
 
     # Inspect multicollinearity
@@ -342,11 +404,7 @@ def correlation_and_feature_relevance(df: pd.DataFrame) -> None:
                 )
 
     # Create temporary numerical target
-    target_num = eda_df["mental_health_risk"].map({
-        "Low": 0,
-        "Medium": 1,
-        "High": 2
-    })
+    target_num = eda_df["mental_health_risk"].map({"Low": 0, "Medium": 1, "High": 2})
 
     # Numerical features vs target
     print("=" * 30)
@@ -368,6 +426,7 @@ def correlation_and_feature_relevance(df: pd.DataFrame) -> None:
         print(col)
         print(
             eda_df.assign(mental_health_risk_num=target_num)
-            .groupby(col)["mental_health_risk_num"].mean()
+            .groupby(col)["mental_health_risk_num"]
+            .mean()
         )
         print("=" * 30)
