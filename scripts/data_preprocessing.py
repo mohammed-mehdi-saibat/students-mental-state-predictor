@@ -6,6 +6,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
 
 
 def data_clues_and_target(df: pd.DataFrame) -> dict:
@@ -103,31 +104,49 @@ def create_numerical_scaler() -> StandardScaler:
     numerical_scaler = StandardScaler()
     return numerical_scaler
 
-def create_numerical_pipeline(imputer: SimpleImputer, transformer: FunctionTransformer, scaler: StandardScaler) -> Pipeline:
-    numerical_pipeline = Pipeline([
-        ("imputer", imputer),
-        ("transformer", transformer),
-        ("scaler", scaler)
-    ])
+
+def create_numerical_pipeline(
+    imputer: SimpleImputer, transformer: FunctionTransformer, scaler: StandardScaler
+) -> Pipeline:
+    numerical_pipeline = Pipeline(
+        [("imputer", imputer), ("transformer", transformer), ("scaler", scaler)]
+    )
     return numerical_pipeline
 
-def create_ordinal_pipeline(imputer: SimpleImputer, encoder: OrdinalEncoder) -> Pipeline:
-    ordinal_pipeline = Pipeline([
-        ("imputer", imputer),
-        ("encoder", encoder)
-    ])
+
+def create_ordinal_pipeline(
+    imputer: SimpleImputer, encoder: OrdinalEncoder
+) -> Pipeline:
+    ordinal_pipeline = Pipeline([("imputer", imputer), ("encoder", encoder)])
     return ordinal_pipeline
 
+
 def create_nominal_pipeline(imputer: SimpleImputer, encoder: OneHotEncoder) -> Pipeline:
-    nominal_pipeline = Pipeline([
-        ("imputer", imputer),
-        ("encoder", encoder)
-    ])
+    nominal_pipeline = Pipeline([("imputer", imputer), ("encoder", encoder)])
     return nominal_pipeline
 
+
 def create_binary_pipeline(imputer: SimpleImputer, encoder: OrdinalEncoder) -> Pipeline:
-    binary_pipeline = Pipeline([
-        ("imputer", imputer), 
-        ("encoder", encoder)
-    ])  
+    binary_pipeline = Pipeline([("imputer", imputer), ("encoder", encoder)])
     return binary_pipeline
+
+
+def create_preprocessor(
+    numerical_pipeline: Pipeline,
+    ordinal_pipeline: Pipeline,
+    nominal_pipeline: Pipeline,
+    binary_pipeline: Pipeline,
+    numerical_group: list,
+    ordinal_categorical_group: list,
+    nominal_categorical_group: list,
+    binary_categorical_group: list,
+) -> ColumnTransformer:
+    preprocessor = ColumnTransformer(
+        [
+            ("num_pipeline", numerical_pipeline, numerical_group),
+            ("ordinal_pipeline", ordinal_pipeline, ordinal_categorical_group),
+            ("nominal_pipeline", nominal_pipeline, nominal_categorical_group),
+            ("binary_pipeline", binary_pipeline, binary_categorical_group),
+        ]
+    )
+    return preprocessor
