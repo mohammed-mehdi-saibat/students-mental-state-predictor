@@ -15,7 +15,7 @@ metrics_path = project_root / "reports" / "metrics" / "airflow_evaluation.json"
 
 @dag(
     dag_id="sc1_ml_pipeline",
-    schedule=None,
+    schedule="0 8 * * 1",
     start_date=pendulum.datetime(2026, 11, 16, tz="Africa/Casablanca"),
     catchup=False,
     tags=["sc1", "machine-learning"],
