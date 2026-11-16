@@ -3,3 +3,6 @@
 __pycache__
 /setup/
 BRIEF SC1.pdf   
+.env
+logs/
+config/
