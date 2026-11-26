@@ -1,230 +1,74 @@
-# Student Mental Health Risk Prediction — SC1
+# Student Wellbeing Lab
 
-An end-to-end **educational machine learning project** that explores factors associated with student mental health risk and predicts one of three **dataset labels**: `Low`, `Medium`, or `High`.
+A five-page Streamlit dashboard for exploring a synthetic student wellbeing dataset, comparing classifiers, and testing the saved model with fictional profiles.
 
-The project covers exploratory data analysis, data preparation, supervised classification, hyperparameter tuning, evaluation, pipeline serialization, **Apache Airflow orchestration**, and a **Streamlit dashboard**.
+**Educational use only.** The model predicts the dataset's Low, Medium, and High labels. Its probabilities have no established clinical validity. Use fictional inputs and avoid using this project for screening, diagnosis, student selection, discipline, or decisions about access to support.
 
-> **Important:** This project is strictly educational. Its predictions are **not** medical diagnoses, clinical screening results, or a basis for disciplinary decisions, student selection, or decisions about an individual's access to support. Use fictional profiles when demonstrating the app.
+![Overview dashboard](docs/screenshots/overview.png)
 
-## Dataset
+[Data Insights](docs/screenshots/data-insights.png) · [Model Evaluation](docs/screenshots/model-evaluation.png) · [Prediction Lab](docs/screenshots/prediction-lab.png) · [Methodology](docs/screenshots/methodology.png)
 
-**Source:** [Student Mental Health Risk Prediction Dataset — Kaggle](https://www.kaggle.com/datasets/maqdadali/mental-health-risk-prediction-dataset-students)
+## Verified results
 
-| Property | Value |
-|---|---|
-| Records | 2,000 |
-| Original columns | 17 |
-| Predictive features | 15 (excluding `student_id` and the target) |
-| Target | `mental_health_risk` |
-| Classes | `Low`, `Medium`, `High` |
-| Class distribution | Low: 660 · Medium: 660 · High: 680 |
-| Missing feature values | 419 in total |
-| Duplicate feature profiles | 0 |
+The [source dataset](https://www.kaggle.com/datasets/maqdadali/mental-health-risk-prediction-dataset-students) contains 2,000 synthetic records, 15 predictive features, and 419 missing feature values. Class counts are 660 Low, 660 Medium, and 680 High.
 
-Place the dataset at `data/raw/student_mental_health.csv` before running the notebooks or Airflow.
-
-## Project workflow
-
-```text
-Raw dataset
-    |
-    v
-Data validation and EDA
-    |
-    v
-Stratified train/test split (80% / 20%)
-    |
-    v
-Preprocessing pipeline
-    |-- Numerical imputation + consistency correction + scaling
-    |-- Ordinal and binary encoding
-    `-- One-hot encoding for nominal categories
-    |
-    v
-Model training and five-fold cross-validation
-    |-- Logistic Regression
-    |-- Random Forest
-    `-- Support Vector Classifier (SVC)
-    |
-    v
-GridSearchCV + model comparison
-    |
-    v
-Final evaluation on the independent test split
-    |
-    v
-Saved model (.joblib) + evaluation metrics (.json)
-    |
-    v
-Streamlit dashboard and educational predictions
-```
-
-**Preprocessing decisions:** Missing numerical values are imputed, categorical values are imputed and encoded according to their type, and numerical features are standardized. Under the documented assumption that social-media hours are included in total screen time, values exceeding screen time are capped at screen time within the pipeline. Plausible IQR outliers are retained. The target is approximately balanced, so SMOTE was not needed.
-
-Transformations are fitted **inside the model pipeline** during cross-validation to reduce data leakage. The independent test set is not used for hyperparameter selection.
-
-## Model results
-
-Three classifiers were evaluated using five-fold stratified cross-validation and macro-averaged F1 as the primary comparison metric.
-
-| Model | Baseline CV F1 macro | Tuned CV F1 macro |
+| Classifier | Baseline CV macro F1 | Tuned CV macro F1 |
 |---|---:|---:|
-| **Logistic Regression** | **0.7506** | **0.7506** |
-| SVC (RBF) | 0.7246 | 0.7365 |
+| Logistic Regression | 0.7506 | 0.7506 |
+| RBF SVC | 0.7246 | 0.7365 |
 | Random Forest | 0.6724 | 0.6747 |
 
-**Selected model:** Logistic Regression with `C=10`, `max_iter=1000`, and `random_state=42`. It offered the best cross-validation F1 and a much smaller training–validation gap than Random Forest.
+The selected Logistic Regression pipeline (`C=10`) achieved **76.0% accuracy** and **0.7596 macro F1** on the 400-record holdout. Per-class F1 was **0.8154 Low**, **0.6415 Medium**, and **0.8218 High**. The saved model reproduced the committed confusion matrix on the reconstructed holdout.
 
-### Final holdout test results
+Sources · [Saved notebook comparison](reports/metrics/notebook_comparison.json) · [Airflow evaluation](reports/metrics/airflow_evaluation.json)
 
-Evaluated on **400 independent test observations**:
+## Run locally
 
-| Metric | Score |
-|---|---:|
-| Accuracy | **0.7600** |
-| Precision (macro) | 0.7601 |
-| Recall (macro) | 0.7593 |
-| F1-score (macro) | **0.7596** |
-
-The model performed better on the `Low` and `High` classes (about **0.82 F1** each) than on `Medium` (**0.64 F1**). The latter is an important limitation.
-
-These results describe the held-out evaluation for this dataset; they do not establish real-world clinical usefulness.
-
-## Project structure
-
-```text
-SC1-Mental-State/
-├── app/
-│   └── app.py
-├── dags/
-│   └── sc1_pipeline.py
-├── data/
-│   ├── raw/
-│   │   └── student_mental_health.csv
-│   └── processed/                 # Generated by Airflow
-├── models/
-│   └── logistic_regression_airflow.joblib  # Generated by Airflow
-├── notebooks/
-│   ├── 01_explanatory_data_anaylisis.ipynb
-│   ├── 02_data_preprocessing.ipynb
-│   └── 03_model_training.ipynb
-├── reports/
-│   ├── figures/                   # EDA visualizations
-│   └── metrics/
-│       └── airflow_evaluation.json  # Generated by Airflow
-├── scripts/
-│   ├── explanatory_data_analysis.py
-│   ├── data_preprocessing.py
-│   ├── data_validation.py
-│   └── model_training.py
-├── Dockerfile
-├── docker-compose.yaml
-├── requirements-airflow.txt
-├── requirements.txt
-└── README.md
-```
-
-Generated files may not exist until the relevant pipeline has run. The `.env`, `logs/`, and generated local Airflow configuration should remain outside version control.
-
-## Local setup — Windows 11 (PowerShell)
-
-**Requirements:** Python, Docker Desktop with its Linux/WSL 2 engine running, and Docker Compose.
-
-From the project directory:
+Use Python 3.13. On Windows, run the following from the repository root in PowerShell.
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python -m pip install streamlit
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m streamlit run app/app.py --server.address 127.0.0.1
 ```
 
-To work with the notebooks, launch Jupyter from the activated environment. All commands below assume that you are in the project root.
+Open [the local dashboard](http://127.0.0.1:8501). The committed model and evaluation load immediately. Download the source CSV and place it at `data/raw/student_mental_health.csv` to enable dataset charts and filters. Start JupyterLab with `.\.venv\Scripts\python.exe -m jupyterlab` to inspect the notebooks. On Linux or macOS use `.venv/bin/python`.
 
-### Run Apache Airflow with Docker
+## Architecture
 
-Airflow runs **inside Docker**, not in the Windows virtual environment. The custom image defined in `Dockerfile` installs the packages from `requirements-airflow.txt`.
+| Stage | Implementation |
+|---|---|
+| Explore and validate | [Notebooks](notebooks/) and [validation script](scripts/data_validation.py) |
+| Split and transform | Stratified 80/20 split, seed 42. The [scikit-learn pipeline](scripts/data_preprocessing.py) imputes, caps social-media hours at total screen time, scales numeric values, and encodes categories. |
+| Compare and evaluate | [Training notebook](notebooks/03_model_training.ipynb) compares models using five stratified folds. The selected pipeline is evaluated on a holdout. |
+| Orchestrate | [Airflow DAG](dags/sc1_pipeline.py) validates, splits, fits, evaluates, and publishes a matching pair of artifacts under `data/processed/`. |
+| Serve | [Streamlit application](app/app.py) reads local artifacts and the synthetic CSV, charts aggregates with Plotly, and scores fictional inputs in memory. |
 
-If this is a fresh setup, create the local Airflow directories and `.env` file:
+The main stack is Python, pandas, NumPy, scikit-learn, Joblib, Streamlit, Plotly, JupyterLab, Apache Airflow, and Docker Compose with PostgreSQL and Redis. Load Joblib files only from trusted sources.
 
-```powershell
-New-Item -ItemType Directory -Force dags, logs, plugins, config | Out-Null
-Set-Content .env "AIRFLOW_UID=50000"
+### Optional Airflow workflow
 
-$bytes = New-Object byte[] 32
-$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-$rng.GetBytes($bytes)
-$rng.Dispose()
-$key = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+','-').Replace('/','_')
-Add-Content .env "FERNET_KEY=$key"
-```
-
-**Do not commit `.env`** or expose its Fernet key. If you already have a working `.env`, keep it rather than regenerating the key.
-
-Build, initialize, and start the services:
+Airflow runs independently of the dashboard. Use Docker Desktop with Linux containers. For fresh local setup, create an untracked `.env` containing `AIRFLOW_UID=50000` and a valid Fernet key. Keep an existing key when reusing the Airflow database. To generate a fresh file on Windows only when it is absent:
 
 ```powershell
+if (-not (Test-Path .env)) {
+    $keyBytes = [byte[]]::new(32)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $rng.GetBytes($keyBytes)
+    $rng.Dispose()
+    $fernet = [Convert]::ToBase64String($keyBytes).Replace('+','-').Replace('/','_')
+    @("AIRFLOW_UID=50000", "FERNET_KEY=$fernet") | Set-Content -Encoding ascii .env
+}
 docker compose config --quiet
 docker compose build
-docker compose up airflow-init
 docker compose up -d
 docker compose ps
 ```
 
-Open **[Airflow at http://localhost:8080](http://localhost:8080)**. For the official **local development** Compose configuration, the default username and password are typically `airflow` / `airflow`; do not reuse these credentials for production.
+Open [local Airflow](http://127.0.0.1:8080), locate `sc1_ml_pipeline`, and unpause it to enable the Monday 08:00 schedule in `Africa/Casablanca`. You can also trigger it from the Airflow UI after placing the CSV in the data directory. Compose is configured for local development. Set your own Airflow credentials and JWT secret before using any shared environment.
 
-Locate the DAG **`sc1_ml_pipeline`**, unpause it if needed, and click **Trigger**. The DAG currently uses **manual execution** (`schedule=None`).
+Each completed run writes its model and evaluation into a run-specific folder, then switches the dashboard to both via a single publication pointer. The repository's committed artifacts serve as the initial snapshot. Re-running the DAG on the same CSV reuses the same holdout.
 
-The five tasks execute in order:
+## Limitations
 
-1. `validate_data` — verifies the input dataset.
-2. `prepare_data` — saves the stratified 80/20 split.
-3. `train_model` — fits the complete Logistic Regression pipeline.
-4. `evaluate_model` — records cross-validation and holdout metrics.
-5. `save_model` — publishes the fitted Joblib model after successful evaluation.
-
-The DAG saves:
-
-- `models/logistic_regression_airflow.joblib`
-- `reports/metrics/airflow_evaluation.json`
-- `data/processed/X_train.csv`, `X_test.csv`, `y_train.csv`, and `y_test.csv`
-
-**Optional scheduling:** To run weekly on Mondays at 08:00 (DAG timezone: `Africa/Casablanca`), replace `schedule=None` with `schedule="0 8 * * 1"` in `dags/sc1_pipeline.py` and unpause the DAG. Docker Desktop and the Airflow services must be running for scheduled execution. This uses the same fixed dataset unless you replace its source.
-
-### Run the Streamlit application
-
-Once Airflow has generated the model and metrics files, use the activated Windows `.venv`:
-
-```powershell
-python -m streamlit run app/app.py
-```
-
-Open **[http://localhost:8501](http://localhost:8501)**.
-
-The one-page application shows model accuracy, macro F1, a confusion matrix, and a form for **fictional student profiles**. It loads the trained pipeline from `models/logistic_regression_airflow.joblib` without retraining.
-
-If a saved model fails to load, check that the local Scikit-learn version is compatible with the version used to create the Joblib file. Only load Joblib artifacts from trusted sources.
-
-## Limitations and responsible use
-
-- This is a **pedagogical prototype**, not a validated mental health assessment tool.
-- The dataset's label-generation process and suitability for real-world use are not established here.
-- The `Medium` class is harder to predict than `Low` and `High`.
-- The original dataset is relatively small (2,000 rows), and the models may not generalize to other student populations.
-- The social-media correction relies on an assumption about time measurements.
-- Re-running the DAG on the same static dataset does **not** constitute new independent validation; the fixed test split must not be used to repeatedly select new models.
-- Do not upload real students' personal or sensitive information to the demonstration app.
-
-## Evidence and project tracking
-
-Add screenshots to this repository before submission, such as the EDA plots, model comparison, confusion matrix, successful five-task Airflow run, and Streamlit interface.
-
-**Jira board:** _Add your project Jira link here._
-
-## Technologies
-
-Python · Pandas · NumPy · Scikit-learn · Matplotlib · Seaborn · Joblib · Apache Airflow 3.3.1 · Docker Compose · PostgreSQL · Redis · Streamlit
-
----
-
-**Scope:** End-to-end machine learning workflow for educational demonstration only.
+The synthetic labels and their generation process do not establish real-world validity. The Medium class is harder to classify, and calibration and subgroup generalization have not been established. The full dataset was explored before model development, so holdout interpretation should account for possible influence on modeling choices. Prediction inputs are not written to disk.

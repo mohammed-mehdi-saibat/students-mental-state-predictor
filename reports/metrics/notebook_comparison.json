@@ -1,0 +1,9 @@
+{
+  "source": "notebooks/03_model_training.ipynb, saved comparison table (cell index 10)",
+  "metric": "Five-fold cross-validation macro F1",
+  "models": [
+    {"name": "Logistic Regression", "baseline": 0.7506, "tuned": 0.7506},
+    {"name": "RBF SVC", "baseline": 0.7246, "tuned": 0.7365},
+    {"name": "Random Forest", "baseline": 0.6724, "tuned": 0.6747}
+  ]
+}

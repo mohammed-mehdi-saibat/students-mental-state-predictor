@@ -1,92 +1,77 @@
-import json
 import sys
 from pathlib import Path
 
-import joblib
-import pandas as pd
 import streamlit as st
 
-# Locate project files and allow loading custom preprocessing functions
-project_root = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(project_root))
-model_path = project_root / "models" / "logistic_regression_airflow.joblib"
-metrics_path = project_root / "reports" / "metrics" / "airflow_evaluation.json"
+APP = Path(__file__).resolve().parent
+sys.path.insert(0, str(APP.parent))
+sys.path.insert(0, str(APP))
 
-st.set_page_config(page_title="SC1 Mental Health Risk", layout="centered")
-st.title("Student Mental Health Risk — SC1")
-st.info("Educational demonstration only. Not a clinical diagnosis, screening, or student decision tool. Use fictional inputs.")
+from dashboard import data_insights, methodology, model_evaluation, overview, prediction_lab
 
-if not model_path.exists():
-    st.error(f"Model not found: {model_path}")
-    st.stop()
+st.set_page_config(page_title="Student Wellbeing Lab", layout="wide", initial_sidebar_state="expanded")
+st.markdown("""
+<style>
+    .stApp { background: #faf9f1; }
+    [data-testid="stHeader"] { background: transparent; }
+    [data-testid="stMain"] { position: relative; isolation: isolate; }
+    [data-testid="stMain"]::before, [data-testid="stMain"]::after {
+        content: "";
+        position: absolute;
+        pointer-events: none;
+        z-index: -1;
+    }
+    [data-testid="stMain"]::before {
+        top: 0;
+        right: 0;
+        width: min(58vw, 860px);
+        height: 350px;
+        background: repeating-radial-gradient(ellipse at 100% 0%,
+            transparent 0 27px, rgb(176 138 8 / 27%) 28px 29px, transparent 30px 48px);
+        mask-image: radial-gradient(ellipse at top right, black 0%, transparent 71%);
+    }
+    [data-testid="stMain"]::after {
+        bottom: 0;
+        left: 0;
+        width: min(45vw, 670px);
+        height: 290px;
+        background: repeating-radial-gradient(ellipse at 0% 100%,
+            transparent 0 32px, rgb(176 138 8 / 19%) 33px 34px, transparent 35px 57px);
+        mask-image: radial-gradient(ellipse at bottom left, black 0%, transparent 71%);
+    }
+    [data-testid="stVerticalBlockBorderWrapper"] { background: #faf9f1f5; }
+    .block-container { max-width: 1400px; padding: 3.5rem 3.2rem 3rem; }
+    [data-testid="stSidebar"] { background: #fff6bf; border-right: 1px solid #e2d78d; }
+    [data-testid="stPageLink-NavLink"] { border-radius: 7px; margin-bottom: 4px; }
+    [data-testid="stPageLink-NavLink"][aria-current="page"] { background: #f7df1e; color: #242217; }
+    [data-testid="stMetric"] { background: #fff; border: 1px solid #e7e2c7;
+        border-radius: 12px; padding: 15px 19px; min-height: 105px; }
+    [data-testid="stMetricValue"] { font-weight: 650; letter-spacing: -.04em; }
+    [data-testid="stVerticalBlockBorderWrapper"] { border-radius: 12px; }
+    h1 { letter-spacing: -.055em; font-weight: 720; }
+    h2, h3 { letter-spacing: -.028em; }
+    .intro { color: #514b38; font-size: 1.07rem; margin: -.3rem 0 1.15rem; }
+    [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover { background: #fbe989; }
+    [data-testid="stMultiSelect"] [data-baseweb="tag"] { background: #f7df1e; color: #242217; }
+    [data-testid="stMultiSelect"] [data-baseweb="tag"] svg { color: #242217; }
+    [data-testid="stBaseButton-primary"] { background: #f7df1e; color: #242217; border-color: #dac315; }
+    [data-testid="stBaseButton-primary"]:hover { background: #ffe84f; color: #242217; }
+    @media (max-width: 800px) { .block-container { padding: 3.5rem 1.25rem 2rem; } }
+</style>
+""", unsafe_allow_html=True)
 
+pages = [
+    st.Page(overview, title="Overview", default=True),
+    st.Page(data_insights, title="Data Insights", url_path="data-insights"),
+    st.Page(model_evaluation, title="Model Evaluation", url_path="model-evaluation"),
+    st.Page(prediction_lab, title="Prediction Lab", url_path="prediction-lab"),
+    st.Page(methodology, title="Methodology", url_path="methodology"),
+]
+page = st.navigation(pages, position="hidden")
+with st.sidebar:
+    st.caption("Educational ML · Synthetic dataset")
+    st.space("small")
+    for item in pages:
+        st.page_link(item)
 
-@st.cache_resource
-def load_model():
-    return joblib.load(model_path)
-
-
-model = load_model()
-
-# Display saved evaluation metrics
-if metrics_path.exists():
-    with metrics_path.open("r", encoding="utf-8") as file:
-        metrics = json.load(file)
-
-    st.subheader("Model performance")
-    col1, col2 = st.columns(2)
-    col1.metric("Test accuracy", f"{metrics['test_accuracy']:.1%}")
-    col2.metric("Test F1 macro", f"{metrics['test_f1_macro']:.1%}")
-
-    st.subheader("Confusion matrix")
-    labels = metrics["labels"]
-    matrix = pd.DataFrame(
-        metrics["confusion_matrix"],
-        index=[f"Actual {label}" for label in labels],
-        columns=[f"Predicted {label}" for label in labels],
-    )
-    st.dataframe(matrix, use_container_width=True)
-
-# Try a fictional student profile
-st.subheader("Try a prediction")
-with st.form("prediction_form"):
-    age = st.number_input("Age", min_value=17, max_value=29, value=21)
-    gender = st.selectbox("Gender", ["Female", "Male", "Non-binary"])
-    year_of_study = st.number_input("Year of study", min_value=1, max_value=5, value=2)
-    sleep_hours = st.number_input("Sleep hours per day", min_value=0.0, max_value=24.0, value=7.0)
-    study_hours_per_week = st.number_input("Study hours per week", min_value=0.0, value=20.0)
-    gpa = st.number_input("GPA (out of 4)", min_value=0.0, max_value=4.0, value=2.6)
-    social_media_hours = st.number_input("Social media hours per day", min_value=0.0, max_value=24.0, value=6.0)
-    screen_time_hours = st.number_input("Screen time hours per day", min_value=0.0, max_value=24.0, value=8.5)
-    physical_activity = st.selectbox("Physical activity", ["Low", "Moderate", "High"])
-    financial_stress = st.slider("Financial stress", 1.0, 10.0, 6.0)
-    family_support = st.slider("Family support", 1.0, 10.0, 6.5)
-    attendance_rate = st.slider("Attendance rate (%)", 0.0, 100.0, 85.0)
-    part_time_job = st.selectbox("Part-time job", ["No", "Yes"])
-    diet_quality = st.selectbox("Diet quality", ["Poor", "Average", "Good"])
-    previous_mental_health_history = st.selectbox("Previous mental health history", ["No", "Yes"])
-
-    submitted = st.form_submit_button("Predict (educational demo)")
-
-if submitted:
-    student = pd.DataFrame([{
-        "age": age,
-        "gender": gender,
-        "year_of_study": year_of_study,
-        "sleep_hours": sleep_hours,
-        "study_hours_per_week": study_hours_per_week,
-        "gpa": gpa,
-        "social_media_hours": social_media_hours,
-        "screen_time_hours": screen_time_hours,
-        "physical_activity": physical_activity,
-        "financial_stress": financial_stress,
-        "family_support": family_support,
-        "attendance_rate": attendance_rate,
-        "part_time_job": part_time_job,
-        "diet_quality": diet_quality,
-        "previous_mental_health_history": previous_mental_health_history,
-    }])
-
-    prediction = model.predict(student)[0]
-    st.write(f"**Predicted dataset class: {prediction}**")
-    st.caption("This label is a model output for demonstration, not a psychological assessment.")
+page.run()

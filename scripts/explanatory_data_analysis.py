@@ -6,10 +6,9 @@ import seaborn as sns
 from IPython.display import display
 from pathlib import Path
 
-root = Path.cwd().resolve().parents[0]
+root = Path(__file__).resolve().parents[1]
 raw_data_path = root / "data" / "raw" / "student_mental_health.csv"
 plots_path = root / "reports" / "figures" / "eda"
-plots_path.mkdir(parents=True, exist_ok=True)
 
 
 def fetch_dataset_and_turn_into_dataframe_and_convert_column_names_to_lowercase(
@@ -197,6 +196,7 @@ def target_variable_analysis(df: pd.DataFrame) -> None:
     plt.xlabel("Risk Level")
     plt.ylabel("Number of Students")
     plt.tight_layout()
+    plots_path.mkdir(parents=True, exist_ok=True)
     plt.savefig(plots_path / "01_target_distribution.png", dpi=300, bbox_inches="tight")
     plt.show()
 
@@ -206,14 +206,18 @@ def univariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
     # Plot numerical distribution
     numerical_features = df.select_dtypes(include="number")
     print("NUMERICAL FEATURES HISTOGRAM")
-    fig, axes = plt.subplots(3, 3, figsize=(15, 10))
+    fig, axes = plt.subplots(3, 4, figsize=(16, 10))
     axes = axes.flatten()
 
     for ax, col in zip(axes, numerical_features.columns):
         sns.histplot(data=df, x=col, bins=20, kde=True, ax=ax)
         ax.set_title(col)
 
+    for ax in axes[len(numerical_features.columns):]:
+        ax.set_visible(False)
+
     plt.tight_layout()
+    plots_path.mkdir(parents=True, exist_ok=True)
     plt.savefig(
         plots_path / "02_numerical_feature_distributions.png",
         dpi=300,
@@ -228,7 +232,7 @@ def univariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
         columns="student_id"
     )
     print("CATEGORICAL FEATURES BAR PLOT")
-    fig, axes = plt.subplots(3, 3, figsize=(15, 10))
+    fig, axes = plt.subplots(3, 4, figsize=(16, 10))
     axes = axes.flatten()
 
     for ax, col in zip(axes, categorical_features.columns):
@@ -241,6 +245,7 @@ def univariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
         ax.set_visible(False)
 
     plt.tight_layout()
+    plots_path.mkdir(parents=True, exist_ok=True)
     plt.savefig(
         plots_path / "03_categorical_feature_distributions.png",
         dpi=300,
@@ -252,14 +257,18 @@ def univariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
 
     # Plot numerical boxplots
     print("NUMERICAL FEATURES BOXPLOTS")
-    fig, axes = plt.subplots(3, 3, figsize=(15, 10))
+    fig, axes = plt.subplots(3, 4, figsize=(16, 10))
     axes = axes.flatten()
 
     for ax, col in zip(axes, numerical_features.columns):
         sns.boxplot(data=df, y=col, ax=ax)
         ax.set_title(col)
 
+    for ax in axes[len(numerical_features.columns):]:
+        ax.set_visible(False)
+
     plt.tight_layout()
+    plots_path.mkdir(parents=True, exist_ok=True)
     plt.savefig(
         plots_path / "04_numerical_feature_boxplots.png", dpi=300, bbox_inches="tight"
     )
@@ -271,7 +280,7 @@ def bevariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
     # Analyze numerical features vs target
     numerical_features = df.select_dtypes(include="number")
     print("NUMERICAL FEATURES VS TARGET")
-    fig, axes = plt.subplots(3, 3, figsize=(15, 10))
+    fig, axes = plt.subplots(3, 4, figsize=(16, 10))
     axes = axes.flatten()
 
     for ax, col in zip(axes, numerical_features.columns):
@@ -284,7 +293,11 @@ def bevariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
         )
         ax.set_title(col)
 
+    for ax in axes[len(numerical_features.columns):]:
+        ax.set_visible(False)
+
     plt.tight_layout()
+    plots_path.mkdir(parents=True, exist_ok=True)
     plt.savefig(
         plots_path / "05_numerical_features_vs_target.png", dpi=300, bbox_inches="tight"
     )
@@ -297,7 +310,7 @@ def bevariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
         columns=["student_id", "mental_health_risk"]
     )
     print("CATEGORICAL FEATURES VS TARGET")
-    fig, axes = plt.subplots(3, 3, figsize=(15, 10))
+    fig, axes = plt.subplots(3, 4, figsize=(16, 10))
     axes = axes.flatten()
 
     for ax, col in zip(axes, categorical_features.columns):
@@ -316,6 +329,7 @@ def bevariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
         ax.set_visible(False)
 
     plt.tight_layout()
+    plots_path.mkdir(parents=True, exist_ok=True)
     plt.savefig(
         plots_path / "06_categorical_features_vs_target.png",
         dpi=300,
@@ -354,6 +368,7 @@ def bevariate_analysis(df: pd.DataFrame) -> matplotlib.figure.Figure:
         ax.set_title(f"{x_col} vs {y_col}")
 
     plt.tight_layout()
+    plots_path.mkdir(parents=True, exist_ok=True)
     plt.savefig(
         plots_path / "07_feature_relationships.png", dpi=300, bbox_inches="tight"
     )
@@ -384,6 +399,7 @@ def correlation_and_feature_relevance(df: pd.DataFrame) -> None:
 
     plt.title("Numerical Features Correlation Heatmap")
     plt.tight_layout()
+    plots_path.mkdir(parents=True, exist_ok=True)
     plt.savefig(
         plots_path / "08_numerical_correlation_heatmap.png",
         dpi=300,
