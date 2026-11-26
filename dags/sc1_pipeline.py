@@ -1,16 +1,24 @@
+import hashlib
 import os
 from pathlib import Path
 
 import pendulum
-from airflow.sdk import dag, task
+from airflow.sdk import dag, get_current_context, task
 
 
 # Define project and dataset paths inside Docker
 project_root = Path(os.environ.get("SC1_PROJECT_ROOT", "/opt/airflow/project"))
 data_path = project_root / "data" / "raw" / "student_mental_health.csv"
-processed_path = project_root / "data" / "processed"
-models_path = project_root / "models"
-metrics_path = project_root / "reports" / "metrics" / "airflow_evaluation.json"
+runs_path = project_root / "data" / "processed" / "runs"
+manifest_path = runs_path.parent / "published_run.txt"
+
+
+def run_directory(*, writing=False) -> Path:
+    run_id = get_current_context()["run_id"]
+    run = runs_path / hashlib.sha256(run_id.encode()).hexdigest()
+    if writing and (run / "published").exists():
+        raise RuntimeError("Published run artifacts are immutable. Start a new DAG run.")
+    return run
 
 
 @dag(
@@ -18,6 +26,7 @@ metrics_path = project_root / "reports" / "metrics" / "airflow_evaluation.json"
     schedule="0 8 * * 1",
     start_date=pendulum.datetime(2026, 11, 16, tz="Africa/Casablanca"),
     catchup=False,
+    max_active_runs=1,
     tags=["sc1", "machine-learning"],
 )
 def sc1_pipeline():
@@ -35,6 +44,8 @@ def sc1_pipeline():
     def prepare_data():
         import pandas as pd
         from scripts.data_preprocessing import data_train_test_split
+
+        processed_path = run_directory(writing=True)
 
         # Load dataset and create stratified split
         df = pd.read_csv(data_path)
@@ -76,6 +87,8 @@ def sc1_pipeline():
         )
         from scripts.model_training import create_model_pipeline
 
+        processed_path = run_directory(writing=True)
+
         # Load original training data
         X_train = pd.read_csv(processed_path / "X_train.csv")
         y_train = pd.read_csv(processed_path / "y_train.csv")["mental_health_risk"]
@@ -113,8 +126,7 @@ def sc1_pipeline():
         model.fit(X_train, y_train)
 
         # Store a candidate model until evaluation succeeds
-        models_path.mkdir(parents=True, exist_ok=True)
-        candidate_path = models_path / "sc1_airflow_candidate.joblib"
+        candidate_path = processed_path / "model.joblib"
         joblib.dump(model, candidate_path)
         print(f"MODEL TRAINED: {candidate_path}")
         return str(candidate_path)
@@ -133,6 +145,9 @@ def sc1_pipeline():
             confusion_matrix,
         )
         from scripts.model_training import evaluate_model_with_cross_validation
+
+        processed_path = run_directory(writing=True)
+        metrics_path = processed_path / "evaluation.json"
 
         # Load fitted model and the independent test split
         model = joblib.load(candidate_path)
@@ -177,13 +192,16 @@ def sc1_pipeline():
 
     @task
     def save_model(candidate_path: str, evaluation_path: str):
-        import shutil
+        run = run_directory()
+        if not all(Path(path).is_file() for path in (candidate_path, evaluation_path)):
+            raise FileNotFoundError("Run artifacts are incomplete")
 
-        # Publish model only after evaluation succeeded
-        final_path = models_path / "logistic_regression_airflow.joblib"
-        shutil.copy2(candidate_path, final_path)
-        print(f"MODEL SAVED: {final_path}")
-        print(f"EVALUATION AVAILABLE: {evaluation_path}")
+        # Switch readers to the completed model and metrics together.
+        (run / "published").touch()
+        pending = manifest_path.with_suffix(".tmp")
+        pending.write_text(run.name, encoding="ascii")
+        pending.replace(manifest_path)
+        print(f"PUBLISHED RUN: {run.name}")
 
     # Execute all tasks in order during one DAG run
     validation = validate_data()
